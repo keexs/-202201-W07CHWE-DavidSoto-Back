@@ -21,27 +21,34 @@ const signIn = async (req, res, next) => {
   }
 };
 
-const loginUser = async (res, req, next) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user) {
-    const error = new Error(`User: ${username}, not found`);
-    error.code = 404;
-    next(error);
-  } else {
-    const correctPassword = await bcrypt.compare(password, user.password);
-    if (!correctPassword) {
-      const error = new Error("Password is not correct");
-      error.code = 401;
+const loginUser = async (req, res, next) => {
+  try {
+    const user = req.body;
+    const alreadyUser = await User.findOne(user);
+    if (!alreadyUser) {
+      const error = new Error(`User: ${user.username}, not found`);
+      error.code = 404;
       next(error);
     } else {
-      const userData = {
-        username,
-        id: user.id,
-      };
-      const token = jwt.sign(userData, process.env.JWT_SECRET);
-      res.json({ token });
+      const correctPassword = await bcrypt.compare(
+        user.password,
+        alreadyUser.password
+      );
+      if (!correctPassword) {
+        const error = new Error("Password is not correct");
+        error.code = 401;
+        next(error);
+      } else {
+        const userData = {
+          username: user.username,
+          id: user.id,
+        };
+        const token = jwt.sign(userData, process.env.JWT_SECRET);
+        res.json({ token });
+      }
     }
+  } catch (error) {
+    next(error);
   }
 };
 
