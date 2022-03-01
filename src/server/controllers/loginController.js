@@ -23,15 +23,15 @@ const signIn = async (req, res, next) => {
 
 const loginUser = async (req, res, next) => {
   try {
-    const user = req.body;
-    const alreadyUser = await User.findOne(user);
+    const { username, password } = req.body;
+    const alreadyUser = await User.findOne({ username });
     if (!alreadyUser) {
-      const error = new Error(`User: ${user.username}, not found`);
+      const error = new Error(`User: ${username}, not found`);
       error.code = 404;
       next(error);
     } else {
       const correctPassword = await bcrypt.compare(
-        user.password,
+        password,
         alreadyUser.password
       );
       if (!correctPassword) {
@@ -40,8 +40,8 @@ const loginUser = async (req, res, next) => {
         next(error);
       } else {
         const userData = {
-          username: user.username,
-          id: user.id,
+          username,
+          id: alreadyUser.id,
         };
         const token = jwt.sign(userData, process.env.JWT_SECRET);
         res.json({ token });
